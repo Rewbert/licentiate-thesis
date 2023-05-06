@@ -1,0 +1,92 @@
+
+-- DSLs
+
+- Building Domain-Specific Languages, Paul Hudak, 1996, https://dl.acm.org/doi/10.1145/242224.242477
+
+-- Scoria
+- Synchron VM, the gang
+- The Sparse Synchronous Model, Stephen A. Edwards, John Hui, 2021, https://ieeexplore.ieee.org/document/9232938
+- Towards a Lingua Franca for deterministic concurrent systems, Lohstroh et al, 2021, https://dl.acm.org/doi/10.1145/3448128
+- Towards secure IoT programming in Haskell, Nachiappan et al, 2021, https://www.cse.chalmers.se/~russo/publications_files/haskell20.pdf
+- Copilot: A hard Real-Time runtime monitor, Pike et al, 2010, https://leepike.github.io/pub_pages/rv2010.html
+- Ptides: A programming model for distributed real-time embedded systems, Derler et al, 2008, https://www.researchgate.net/publication/228642287_PTIDES_A_programming_model_for_distributed_real-time_embedded_systems
+- The synchronous languages 12 years later, Edwards et al, 2003, https://ieeexplore.ieee.org/document/1173191
+- The esterel synchronous programming language: Design, semantics, implementation, Gerard Berry et al, 1992, https://www.sciencedirect.com/science/article/pii/016764239290005V
+- Synchronous programming with events and relations: the SIGNAL language and its semantics, Benveniste et al, 1991, https://www.sciencedirect.com/science/article/pii/016764239190001E
+- LUSTRE: a declarative language for real-time programming, Caspi et al, 1987, https://dl.acm.org/doi/10.1145/41625.41641
+
+-- HasTEE
+
+- Arm TrustZone
+- IAGO Attacks, 2013
+- Haste APP, Anton Ekblad, 2014
+- Secured Routines, Ghosn et al, 2019
+- Intel SGX
+- Twine, Menetrey et al, 2021
+- Two can keep a secrt ..., Russo, 2015
+- Moat, Sinha et al, 2015
+- Graphene, Tsai et al, 2017
+- Rust-SGX, Wang et al, 2019
+- A Survey of Multi-Tier programming, Weisenburger et al, 2021
+
+-- Future Work
+
+- Distributed SSM (may miss deadlines, how to recover?)
+- Extend Scoria with custom types and implement larger case studies (related to the one above)
+- Scoria + SGX
+- HasTEE + GPU (Perhaps take an existing embedding of array computations, e.g feldspar or accelerate, and run it on confidential GPU)
+- Multiple enclaves (know how to do this from Anton's thesis)
+- Compiler testing (maybe, but not something to bet on. Need to focus more)
+- Legacy SGX apps
+- Use Scoria as a framework to specify and test temporal properties of applications
+
+-- Introduction plan
+
+-- Scoria
+-- HasTEE
+
+What is a general purpose language?
+- Wikipedia: "A computer language that is broadly applicable across application domains, and lacks specialized features for a particular domain".
+
+Is C general purpose?
+- Yes and no. Technically, C can be used to write any kind of software, but excels at writing software for hardware. By the definition
+above it is general purpose, and in practice it is used to write all kinds of software. One reason for this is that because C is so
+close to the hardware it will run on, you can make assumptions of memory layout and write very efficient code.
+High-level languages are called high because they are further detached from the hardware they run on, and don't expose the same abstractions.
+C actually has very few abstractions, leading to more code being written, which in turn leads to more bugs.
+
+The heterogenity of programing languages is a good thing, because you can pick the best tool for the job.
+Using C to write code for a robot is very appropriate, whereas it might be less intuitive to use C to write
+code for a compiler. A compiler has to be good at manipulating trees, whereas software for a robot needs to talk
+about hardware components.
+
+Even if a language is deemed to be general purpose, can it really be used to implement any kind of software?
+What if the software has to implement some security properties? Writing secure software is hard, and having the
+wrong tool for the job makes it all the more difficult.
+Languages with native security features have not had a huge adoption. The experimentation has mainly been done by
+retrofitting systems over existing languages, imposing restrictions on the original language or making a large
+toolchain even more messy. Companies are not eager to pick these systems up.
+
+What about hardware with security features? In the last decade we have seen more work on hardware backed enclaves.
+Many, if not all, kinds of applications could benefit from secure enclaves in which confidential results are
+computed, or where secrets are stored. However, the SDK's for these facilities, supplied by hardware vendors,
+typically expose a C API. Software that is not originally written in C will require a lot of effort to run
+securely in these enclaves. Even software written in C will not be painless to modify.
+If programs for any domain can benefit from the use of enclaves, why must they be developed in languages
+most suitable for hardware programming?
+
+< say something about the domain of Scoria, and why writing C code is not necessarily what you want to do. You
+might just want to write a mesh network with small devices, without really caring about the device itself.
+Does it make sense to write a buttload of code that concerns itself with accessing the hardware? Perhaps
+the most desireable thing one might want to do is to describe the application logic only, without caring about
+how it is supposed to run on the hardware. Scoria abstracts away hardware details and clock configurations. >
+
+The papers in this thesis detail my experimentation with exploring the design and implementation of DSLs for specific domains where I feel that
+the current SOTA is lacking. I do this via _embedded_ DSL's to get access to existing infrastructure. The upsides of
+using EDSL's over creating new DSL's are ... <insert many nice arguments>.
+
+Paper 1: We experiment with language design where the language treats time as a first-class object, and specifying temporal
+properties is simple. We extend this programming model with suppert for IO, and discuss contrasting alternatives of implementing IO.
+
+Paper 2: We develop a Haskell DSL for writing a single application which is later partitioned into two programs. One of these
+applications execute in a secure enclave, and communication between the two is inserted automatically at compile time.
