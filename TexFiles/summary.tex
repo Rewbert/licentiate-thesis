@@ -1,6 +1,11 @@
 \chapter{Introduction}
 \label{chap:introduction}
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.2]{graphics/mesh.png}
+\end{figure}
+
 Consider an application that is distributed over a network, e.g. as a set of \textit{Internet of Things}-devices (IoT). The
 connection between devices forms a mesh network, and for the devices to be able to cooperate and implement the application they
 need to agree on facts such as what the current time is, what other devices are part of the network, and more. In many cases
@@ -8,13 +13,14 @@ IoT devices take one of two roles. Either a device will perform period tasks suc
 the value across the network to other devices, or a device will be idle until a value arrives from another device, at which point
 the device needs to \textit{react} to that value.
 
-The application described above has many moving parts that are non-trivial. For devices to form a mesh network
+The application described above has many moving parts that are non-trivial. The scarcity of hardware resources on many IoT
+devices means that devices are often forced to rely on a battery for power. To ensure the continued availability of devices,
+they need to carefully manage their power consumption such that the battery life is extended as far as possible. In addition to 
+his, temporal properties need to be carefully stated and implemented. It could be crucial that a future action is
+performed at a very precise moment in time. For devices to form a mesh network
 and cooperate, the devices need to manage cryptographic keys. These keys are used to decide if a device is part of the network
 or not and to ensure that a message in transit from one device to another is encrypted, such that the integrity of the network
-is not violated. The scarcity of hardware resources on many IoT devices means that devices are often forced to rely on a battery for power.
-To ensure the continued availability of devices, they need to carefully manage their power consumption such that the
-battery life is extended as far as possible. In addition to this, temporal properties need to be carefully stated and implemented.
-It could be crucial that a future action is performed at a very precise moment in time.
+is not violated.
 
 The above requirements are very pervasive during the development of such an application and must be considered at every stage of
 development. Devices such as these are usually programmed using low-level languages and toolchains such as C/C++. All the
@@ -32,6 +38,7 @@ We ask ourselves a question; can we not leverage high-level languages with domai
 development of applications such as the one described at the top of this section? If the developer can be freed from the burden
 of having to maintain boilerplate code, the developer can focus their energy on what the application is supposed to do, rather than
 details of how it does it.
+
 The topic of this thesis is to investigate whether it is feasible to develop a high-level language such as this. To
 answer this, we develop DSLs that explore what domain-specific abstractions may be useful. The languages are
 implemented as \textit{embedded} domain-specific languages (DSL) in the functional language Haskell. Embedding a DSL in a host
@@ -39,14 +46,14 @@ language drastically reduces the initial cost of language development, and enabl
 embedded language can be implemented as an embedded compiler that generates code to be executed later, or as an embedded
 interpreter that runs the program during host language execution time.
 
-While we don't yet have a full story and a definitive answer, the work in this thesis takes us closer to an answer.
-The thesis presents two DSLs, Scoria and HasTEE \textcolor{red}{(how to cite this)}. Scoria investigates domain-specific
+While we don't yet have a full story and a definitive answer, the work in this thesis brings us closer.
+The thesis presents two DSLs, Scoria and HasTEE. Scoria investigates domain-specific
 abstractions that help a developer specify the temporal behavior of their program. Additionally, the runtime system of Scoria can
 recognize that a long period of inactivity is coming, and can choose to put the device it is running on in a low-power mode,
-to conserve energy. While this is not something we have evaluated yet, we believe it will be easy to evaluate in the future.
-Scoria is intended to run on microcontrollers with scarce resources. As such, the large runtime system of Haskell discards
-Haskell itself as the execution vehicle, and Scoria is implemented as an embedded compiler that outputs C code. The C code
-is compiled at a later stage and executed on the device.
+to conserve energy. While we have not evaluated how much power can be conserved yet, we believe it will be easy to evaluate
+in the future. Scoria is intended to run on microcontrollers with scarce resources. Given the extensive runtime demands
+of Haskell, it becomes infeasible to employ Haskell as the execution vehicle. Consequently, to address this limitation, Scoria
+is implemented as an embedded compiler that generates C code. The C code is compiled at a later stage and executed on the device.
 
 HasTEE develops domain-specific abstractions that ease the development of software with security requirements. Specifically,
 HasTEE enables a developer to use the type system of Haskell to identify the parts of an application that are to be executed in a
@@ -58,9 +65,12 @@ is achieved when developing the application. HasTEE is intended to run on machin
 platform of Scoria, and as such is implemented as an embedded interpreter, where HasTEE uses the Haskell runtime as its execution
 vehicle.
 
-The results of this thesis indicate that there is absolutely space for a high-level language with domain-specific abstractions
+The results of this thesis indicate that there is space for a high-level language with domain-specific abstractions
 that will ease application development in this domain, and there are many interesting lines of future work that could be pursued.
-\textcolor{red}{mention some future work}
+First, we wish to draw some synergy between Scoria and HasTEE, and enable a developer to write Scoria programs that use TEEs on
+microcontrollers, e.g. Arm TrustZone on Cortex-M processors. Second, we wish to investigate if we can extend Scoria with
+functionality to describe complete networks of devices and generate code for each of them. We wish to use the type system of
+Haskell to identify unique devices and partition an application based on that.
 
 The remainder of this thesis is structured as follows: first, the domains of the two DSLs presented in this thesis are
 described in terms of an example application. The sections describe nuances related to application development of said domain,
@@ -83,52 +93,7 @@ are relevant to this thesis. Finally, the two papers follow.
 %     \item Remaining work: Distributed Scoria, tierless programming, Arm TrustZone for confidential Scoria
 % \end{itemize}
 
-% \begin{LaTeXdescription}
-%     \item What is the difference between a general purpose, and a domain-specific, programming language?
-% \end{LaTeXdescription}
-
-% To begin to address this question we state what a general-purpose language is, "A computer language that is broadly
-% applicable across application domains, and lacks specialized features for a particular domain".
-
-% Does this definition imply that it is completely arbitrary, which language we should choose for a specific project? We should be
-% able to implement arbitrary software in a general-purpose language.
-
-% The answer is surely no. A language can be general purpose in that any software could be implemented in it, but
-% actually excels at writing software for a \textit{specific domain}. As an example, consider Erlang \cite{DBLP:conf/hopl/Armstrong07}. It is general purpose,
-% but really excels at writing programs that need to be distributed and scalable. In a way, Erlang is both a general-purpose
-% language and a domain-specific language. Haskell, as another example, is a general-purpose language whose support for custom algebraic data types and pattern-matching
-% makes it ideal for a program that manipulates trees, such as compilers and interpreters.
-
-% A domain-specific language \cite{DBLP:journals/csur/Hudak96} is domain-specific because it has language primitives that allow a programmer to concisely
-% express behavior that is common in a specific domain. In Erlang, it is very easy to create concurrent processes that perform
-% tasks, where the runtime system of Erlang makes sure to use available cores on the machine it executes on. The same behavior
-% can be expressed in e.g. C or Haskell, but since these languages lacks abstractions for expressing this, a lot more code has
-% to be written to achieve the same behavior. More code means more bugs, higher maintenance costs, and perhaps a larger software team.
-% We conclude this paragraph by emphasizing that using domain-specific abstractions in high-level languages, help developers to focus
-% on the intended behavior of an application, rather than details of the implementation.
-
-% Some application domains are harder to provide a high-level language for than others. For example, if applications in this domain
-% need to execute on more niche hardware, the choice of hardware can influence what can execute or not. If the target
-% platform is a small microcontroller, memory constraints will influence what languages could realisticly execute on it, as different
-% languages have different memory footprints. Another reason could be that the language has a managed runtime, and that this runtime
-% is written in such a way that it makes assumptions of the platform it runs on. In this case, properties of the programming language,
-% their memory requirements or their implementation, is what stops us.
-
-% Another example of potentially problematic hardware, is hardware enforced trusted-execution environments (TEE). While TEEs are
-% supported on more conventional machines, where memory or implementation is less likely to be an issue, there are other limiting
-% factors. The toolchains that enables development of TEEs expects the developer to write low-level C code, which is
-% error-prone and has no domain-specific abstractions. Furthermore, a unique programing model where an application is made up of
-% two components further hinders application development, as this is not a model easilly expressed in existing high-level
-% languages. In this case, properties of the platform hinders us.
-
-% In this thesis, I explore how we can overcome obstacles imposed by either the choice programming language itself, or imposed by
-% the target platform. I do this by leveraging an existing high-level general-pupose language, Haskell, to implement
-% domain-specific languages. The following two sections will illustrate how the lack of domain-specific abstractions can
-% lead to an unecessarily complicated implementation, and how my research has made these domains more accessible. We then cover some
-% important background topics, after which the two papers that make up this thesis follow.
-
-\section{Domain One: Programs with Temporal Behaviors}
-\todo{Title of section is weird}
+\section{Programs with Temporal Behaviors}
 
 Consider a simple program
 that flashes an LED at a fixed frequency. This program is the "Hello world!" of microcontroller programming, and is often distributed
@@ -307,7 +272,7 @@ In this program, the LED variable itself becomes the alarm. In a while loop, a f
 variable after which the program blocks until the update occurs. In Scoria, by writing to a variable associated
 with an LED, the value of the LED is immediately propagated to the physical LED.
 
-\section{Domain Two: Programs with Confidentiality requirements}
+\section{Programs with Confidentiality requirements}
 
 A second non-trivial application domain is that of confidential computing. Confidential computing is the act of protecting
 \textit{data in use}.
@@ -440,55 +405,12 @@ implemented in another language, called the host language, as a library. By embe
 a host language, many phases from the host compiler can be directly inherited by the new language, such as the parser,
 type checker, code generator, etc.
 
-Languages can be embedded in either a \textit{shallow} or \textit{deep} fashion. A shallow embedding will evaluate and yield
-the semantics of a program immediately, while a deep embedding will produce an intermediate representation (IR) that is
-interpreted at a later stage. The below example imeplements a small, shallow, EDSL (in Haskell) for describing shapes and testing
-whether a pixel (denoted by a \code{(Int,Int)} tuple) lies inside or outside of the shape.
-
-\begin{verbatim}
-    type Shape = (Int, Int) -> Bool
-
-    empty :: Shape
-    empty = \_ -> False
-
-    circle :: Int -> Shape
-    circle r = \(x,y) -> x^2 + y^2 <= r
-
-    invert :: Shape -> Shape
-    invert sh = not . sh
-
-    run :: (Int, Int) -> Shape -> Bool
-    run (x,y) shape = shape (x,y)
-\end{verbatim}
-
-The semantics of a shape is computed immediately in terms of a Haskell function. Inspecting whether a pixel belongs to a
-shape is done by applying the pixel to the function directly. Below follows the same example, but implemented in a deep
-fashion. The functions of the EDSL will build syntax instead of semantics.
-The meaning of each function is encoded in the \code{run} function, where syntax is turned into semantics.
-
-\begin{verbatim}
-    data Shape = Empty | Circle Int | Invert Shape
-
-    empty :: Shape
-    empty = Empty
-
-    circle :: Int -> Shape
-    circle r = Circle r
-
-    invert :: Shape -> Shape
-    invert sh = Invert sh
-
-    run :: (Int, Int) -> Shape -> Bool
-    run (x,y) Empty       = False
-    run (x,y) (Circle r)  = x^2 + y^2 <= r
-    run (x,y) (Invert sh) = not (run (x,y) sh)
-\end{verbatim}
-
-A shallow embedding will produce a result in a semantic domain, whereas a deep embedding does not necessarily have to
-do that. Once the syntax is built, the syntax can be converted to a result in a semantic domain with a \code{run} function
-like the one above, but it can also be turned into a value of another syntactic domain by \textit{generating code}. In such
-a scenario, we have two distinct execution times, the host language execution time, and the execution time of the generated
-code (the embedded language. In this case, the host language becomes a very powerful meta-language for meta-programming in
+Languages can be embedded in either a \textit{shallow} or \textit{deep} fashion.
+While a shallow embedding will yield a result in a semantic domain, a deep embedding does not necessarily have to
+do that. A deep embedding constructs syntax rather than evaluate semantics. This syntax can be interpreted at a later
+stage to yield the semantics of a program. A deep embedding may also produce a value of another syntactic domain, by
+\textit{generating code}. In such a scenario, we have two distinct execution times, the host language execution time, and the execution time of the generated
+code, the embedded language. The host language becomes a very powerful meta-language for meta-programming in
 the embedded language. This is a result of the two execution times -- the execution time of the host language and the
 execution time of the embedded language. During host language execution time, programs in the embedded language can be
 combined, manipulated, and optimized to produce other programs.
@@ -527,20 +449,29 @@ terminate, \code{waitAll} will not terminate until all references received updat
 A code-generating EDSL can exploit the two execution times to perform partial evaluation\cite{DBLP:conf/haskell/ValliappanRL21},
 by specializing the embedded program during the host language execution time. A compiler optimizes a program by applying
 rewrite rules, turning a value of a syntactic domain into another value of the same syntactic domain.
-By embedding a language inside a host language, the host language can be used to partially evaluate a program before
-generating code. This is done by transforming program fragments of the embedded language into values of a semantic domain
-that the host language can evaluate. The result of this evaluation is then reified to yield a new value in the syntactic
-domain again.
+By embedding a language inside a host language, the host language can transform program fragments of the embedded language
+into values of a semantic domain that the host language can evaluate. The result of this evaluation can then be reified to
+yield a new value in the syntactic domain again.
 
-While there are many arguments in favor of EDSLs over DSLs, there are also arguments against EDSLs. Two of the bigger arguments
-are that the syntax of the embedded language becomes influenced by the host language. A dedicated DSL will employ its own parser,
-yielding potential domain-specific syntax that simplifies program development. Another argument is that the choice of host language
-might impair programmer efficiency. If an EDSL is embedded in e.g. Haskell, a Haskell developer might be much more efficient
-than a C developer, as the Haskell developer knows how to properly take advantage of the host language features.
+While these are some arguments in favor of EDSLs over DSLs, there are also arguments against EDSLs. Three of the more prevalent
+arguments against EDSLs are
 
-\textcolor{red}{John proposed mentioning error messages here, which I agree is also a good point to mention}
+\begin{itemize}
+    \item The syntax of the embedded language is influence by the choice of host language. A dedicated DSL will have its own
+    parser that supports domain-specific syntax.
+    \item The choice of host language can have an impact on developer efficiency. If a language is embedded in e.g. Haskell, a
+    Haskell developer is better situated to exploit Haskell features to write clever programs.
+    \item As an embedded program is written in a host language, error messages from the host language are inherited. These may
+    be more complicated than necessary, and can reflect implementation details that don't concern the application developer.
+\end{itemize}
 
-\textcolor{red}{TODO say more stuff}
+\textcolor{red}{Perhaps reiterate that for language prototyping, we can be very efficient with an EDSL. We can then
+develop an actual DSL after we are done experimenting, and have a better idea of what we want our language to look like.}
+
+% that the syntax of the embedded language becomes influenced by the host language. A dedicated DSL will employ its own parser,
+% yielding potential domain-specific syntax that simplifies program development. Another argument is that the choice of host language
+% might impair programmer efficiency. If an EDSL is embedded in e.g. Haskell, a Haskell developer might be much more efficient
+% than a C developer, as the Haskell developer knows how to properly take advantage of the host language features.
 
 \subsection{Synchronous Programming Languages}
 
@@ -746,76 +677,75 @@ The purpose is that e.g. a compromised operating system can not read this memory
 
 Intel SGX refers to such protected memory regions as \textit{enclaves}, and protect them via encryption by the CPU. Code and
 data is decrypted when it moves into CPU cache, and encrypted when it leaves the CPU cache. This constant encryption
-and decryption add significant overhead. Furthermore, when untrusted code invokes a trusted method in an enclave, the time it takes
+and decryption add significant overhead. When untrusted code invokes a trusted method in an enclave, the time it takes
 to just perform the function call is upwards of 35 times slower.
 
 In contrast to Intel SGX, Arm TrustZone use hardware isolation to separate the memory accessible by untrusted software and
 trusted software. No encryption is needed, as untrusted memory can not access trusted memory. \textcolor{red}{ask abi for performance}
 
 The programming model for TEEs requires the developer to partition their application into two components. One component
-executes inside the TEE and assumes the role of a server, while the untrusted component executes outside, and can make
-remote procedure calls in the application inside the TEE. If untrusted code tries to access trusted
-data, an error will be raised. This configuration is illustrated in figure \ref{graphics:tee}.
+executes inside the TEE, while the untrusted component executes outside. The untrusted components drive the execution, and may
+perform remote procedure calls in the application inside the TEE, which in turn can call out of the enclave if it requires so.
+If untrusted code tries to access trusted data, an error will be raised. This configuration is illustrated in
+figure \ref{graphics:tee}.
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.2]{graphics/tee.png}
-    \caption{\textcolor{blue}{The diagram illustrates that an application using a hardware-enforced TEE to protect its secrets need to
+    \caption{The diagram illustrates that an application using a hardware-enforced TEE to protect its secrets need to
     be partitioned into two parts. The part outside of the TEE can perform remote procedure calls in the application
-    executing inside the TEE.}}
+    executing inside the TEE. Arrows indicate remote procedure invocations.}
     \label{graphics:tee}
 \end{figure}
 
 While this sounds simple enough, it is in practice quite complicated. Aside from technical complexity
 concerning the maintenance of toolchains, actual application development is not trivial. Managing two projects and an
-interface between them takes some effort. The TEE application is much more restricted in what it can do, as some
+interface between them takes some effort. The TEE application is much more restricted in what it can do as some
 operations are inherently leaky. As an example, applications intended to run on Intel SGX need to be compiled with a
 restricted version of the C standard library, where many ordinary functions are missing. This makes it difficult to port
 legacy applications to run on Intel SGX, as these applications were written with the assumption that they can access the
-whole standard library.
+whole standard library. To ease the porting of legacy applications to Intel SGX, projects such as Gramine have emerged
+(previously called Graphene \cite{DBLP:conf/usenix/TsaiPV17}). Gramine is a library OS that reintroduces the missing
+functionality from the restricted standard library, enabling any Linux binary to run unmodified.
 
-To ease the porting of legacy applications to Intel SGX, projects such as Gramine have emerged (previously called
-Graphene \cite{DBLP:conf/usenix/TsaiPV17}). Gramine is a library OS that reintroduces the missing functionality from the
-restricted standard library such that any Linux binary can run unmodified.
+% \section{This Thesis}
 
-\section{This Thesis}
+% The research described in this thesis details my experimentation and exploration of the design and implementation of
+% DSLs, where I feel that there are unexplored abstractions that warrant experimentation.
 
-The research described in this thesis details my experimentation and exploration of the design and implementation of
-DSLs, where I feel that there are unexplored abstractions that warrant experimentation.
+% In paper 1 I experiment with language design for a language that treats time as a first-class citizen. The programming model
+% is implemented with support for IO, and the intention is that it should be easy to specify the temporal behavior of a program
+% without needing to worry about the details of implementation.
 
-In paper 1 I experiment with language design for a language that treats time as a first-class citizen. The programming model
-is implemented with support for IO, and the intention is that it should be easy to specify the temporal behavior of a program
-without needing to worry about the details of implementation.
+% In paper 2 we turn Haskell itself into a DSL for writing applications that use secure enclaves. We implement a library that
+% allows the developer to specify which computations should happen inside an enclave, and which should happen outside. We
+% then recognize that such a scenario is equivalent to enforcing IFC policies, but in a system where the operating system
+% does not have to be trusted.
 
-In paper 2 we turn Haskell itself into a DSL for writing applications that use secure enclaves. We implement a library that
-allows the developer to specify which computations should happen inside an enclave, and which should happen outside. We
-then recognize that such a scenario is equivalent to enforcing IFC policies, but in a system where the operating system
-does not have to be trusted.
+% \section{Future work}
 
-\section{Future work}
+% My research has reached a point where there are many different paths forward. Below I will mention a few of them.
 
-My research has reached a point where there are many different paths forward. Below I will mention a few of them.
-
-\begin{itemize}
-    \item Is it possible to distribute Scoria? Currently, SSM executes locally on a single machine, but it would be interesting
-    to see how it could be distributed to execute across multiple devices in a network. Latencies in network communication
-    might lead to an event arriving after time has already progressed. Related work to this is e.g LF \cite{DBLP:journals/tecs/LohstrohMBL21} and PTIDES \cite{DBLP:conf/dsrt/DerlerLM08}.
-    \item Generalizing HasTEE such that more than one TEE can be programmed would allow
-    us to use a more general lattice of security label, rather than the binary system of labels we currently use (trusted/untrusted).
-    \item To further increase trust in a HasTEE application, it should be investigated whether the attestation functionality of
-    e.g Intel SGX can be used to prove the trustworthiness of the generated enclaves.
-    \item HasTEE applications do not make any assumptions on the underlying hardware TEE. We wish to investigate if we can port
-    HasTEE to other hardware platforms, such as Arm TrustZone.
-    \item We would like to explore whether there can be some synergy between Scoria and HasTEE. Some microcontrollers come with
-    the Arm Cortex-M processors, which have support for TrustZone. It would make for a very nice story if all of these things can come
-    together; distributed SSM with support for confidential computing.
-\end{itemize}
+% \begin{itemize}
+%     \item Is it possible to distribute Scoria? Currently, SSM executes locally on a single machine, but it would be interesting
+%     to see how it could be distributed to execute across multiple devices in a network. Latencies in network communication
+%     might lead to an event arriving after time has already progressed. Related work to this is e.g LF \cite{DBLP:journals/tecs/LohstrohMBL21} and PTIDES \cite{DBLP:conf/dsrt/DerlerLM08}.
+%     \item Generalizing HasTEE such that more than one TEE can be programmed would allow
+%     us to use a more general lattice of security label, rather than the binary system of labels we currently use (trusted/untrusted).
+%     \item To further increase trust in a HasTEE application, it should be investigated whether the attestation functionality of
+%     e.g Intel SGX can be used to prove the trustworthiness of the generated enclaves.
+%     \item HasTEE applications do not make any assumptions on the underlying hardware TEE. We wish to investigate if we can port
+%     HasTEE to other hardware platforms, such as Arm TrustZone.
+%     \item We would like to explore whether there can be some synergy between Scoria and HasTEE. Some microcontrollers come with
+%     the Arm Cortex-M processors, which have support for TrustZone. It would make for a very nice story if all of these things can come
+%     together; distributed SSM with support for confidential computing.
+% \end{itemize}
 
 
 
-My research so far have taken me to a place where there are many potential ways foward. My work on Scoria showed how we can
-extend a reactive system with support for IO, while remaining deterministic. My work on HasTEE illustrated that is it possible
-to perform confidential computing in native Haskell, with the use of a simple library.
+% My research so far have taken me to a place where there are many potential ways foward. My work on Scoria showed how we can
+% extend a reactive system with support for IO, while remaining deterministic. My work on HasTEE illustrated that is it possible
+% to perform confidential computing in native Haskell, with the use of a simple library.
 
 
 

@@ -18,10 +18,10 @@
 %CHECK those to be sure the format is up to date and everything is included!
 \include{TexFiles/firstpage}
 
-\setcounter{page}{1}
-%The dedication.
-\thispagestyle{plain}
-\include{TexFiles/dedication}
+% \setcounter{page}{1}
+% %The dedication.
+% \thispagestyle{plain}
+% \include{TexFiles/dedication}
 
 %Abstract. Word length regulated by Chalmers/GU layouting guidelines.
 \thispagestyle{empty} % To avoid page numbers in blank pages
@@ -94,8 +94,35 @@
 % \thispagestyle{empty} % To avoid page numbers in blank pages
 % \cleardoublepage 
 
+% \part{Papers}
 % \include{TexFiles/appendedPapers}
-% \includepdf[pages=-,pagecommand={},fitpaper=true]{papers/paper.pdf}
+\includepdf[pages=-,pagecommand={},fitpaper=true,addtotoc={ 1,chapter,0,Creating a Language for Writing Real-Time Applications for the Internet of Things,scoriapaper
+                                                           , 1,section,0,Introduction,scoriaintro
+                                                           , 3,section,0,Motivation,scoriaback
+                                                           , 6,section,0,Overview of Scoria,scoriaoverview
+                                                           , 8,section,0,I/O In Scoria,scoriaio
+                                                           , 11,section,0,Leveraging the Host Language,scorialeverage
+                                                           , 12,section,0,Testing,scoriatesting
+                                                           , 13,section,0,Experimental Results,scoriaresults
+                                                           , 18,section,0,Related Work,scoriarelated
+                                                           , 19,section,0,Future Work,scoriafuture
+                                                           , 20,section,0,Conclusions,scoriaconclusions
+                                                           , 21,section,0,References,scoriabib
+                                                           , 23,section,0,Appendix,scoriaappendix
+                                                          }]{papers/MEMOCODE2022_PAPER__Copy_-1.pdf}
+\includepdf[pages=-,pagecommand={},fitpaper=true,addtotoc={ 1,chapter,0,HasTEE: Confidential Computing on Trusted Execution Environments with Haskell,hasteepaper
+                                                           , 2,section,0,Introduction,hasteeintro
+                                                           , 5,section,0,Background,hasteebackground
+                                                           , 6,section,0,Key Idea: A Typed\, High-level Programming Model for Enclaves,hasteekeyidea
+                                                           , 9,section,0,Design and Implementation os HasTEE,hasteedesign
+                                                           , 19,section,0,Case Studies,hasteecasestudies
+                                                           , 27,section,0,Evaluation,hasteeeval
+                                                           , 28,section,0,Related Work,hasteerelated
+                                                           , 30,section,0,Future Work,hasteefuture
+                                                           , 31,section,0,Conclusions,hasteeconclusions
+                                                           , 31,section,0,References,hasteebib
+                                                          , 34,section,0,Appendix,hasteeappendix
+                                                          }]{papers/SGX__for_lic_.pdf}
 
 %
 %================================================================%
