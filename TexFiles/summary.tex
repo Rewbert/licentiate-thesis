@@ -16,7 +16,7 @@ the device needs to \textit{react} to that value.
 The application described above has many moving parts that are non-trivial. The scarcity of hardware resources on many IoT
 devices means that devices are often forced to rely on a battery for power. To ensure the continued availability of devices,
 they need to carefully manage their power consumption such that the battery life is extended as far as possible. In addition to 
-his, temporal properties need to be carefully stated and implemented. It could be crucial that a future action is
+this, temporal properties need to be carefully stated and implemented. It could be crucial that future action is
 performed at a very precise moment in time. For devices to form a mesh network
 and cooperate, the devices need to manage cryptographic keys. These keys are used to decide if a device is part of the network
 or not and to ensure that a message in transit from one device to another is encrypted, such that the integrity of the network
@@ -25,7 +25,8 @@ is not violated.
 The above requirements are very pervasive during the development of such an application and must be considered at every stage of
 development. Devices such as these are usually programmed using low-level languages and toolchains such as C/C++. All the
 requirements of the application above will require a lot of boilerplate code. Many things need to
-happen to ensure that the requirements are met but don't relate to the application logic.
+happen to ensure that the requirements are met but don't relate to the application logic. Furthermore, the lack of features
+such as memory safety makes code error-prone.
 
 High-level languages offer different language abstractions that can more easily express the desired behavior of an application.
 In addition, a language could offer domain-specific abstractions that ease application development for a specific domain.
@@ -34,12 +35,14 @@ make Haskell excel at implementing programs that need to manipulate trees, such 
 for spawning concurrent processes that can communicate between endpoints in a network makes Erlang a good choice for implementing
 applications that need to be distributed and scalable.
 
-We ask ourselves a question; can we not leverage high-level languages with domain-specific abstractions to ease the
+We ask ourselves a question; can we leverage high-level languages with domain-specific abstractions to ease the
 development of applications such as the one described at the top of this section? If the developer can be freed from the burden
-of having to maintain boilerplate code, the developer can focus their energy on what the application is supposed to do, rather than
+of having to maintain boilerplate code, the developer can focus on what the application is supposed to do, rather than
 details of how it does it.
 
-The topic of this thesis is to investigate whether it is feasible to develop a high-level language such as this. To
+The topic of this thesis is to investigate whether it is feasible to develop a high-level language that meets the requirements
+of the application domain described above.
+requirements. To
 answer this, we develop DSLs that explore what domain-specific abstractions may be useful. The languages are
 implemented as \textit{embedded} domain-specific languages (DSL) in the functional language Haskell. Embedding a DSL in a host
 language drastically reduces the initial cost of language development, and enables experimentation to commence much quicker. An
@@ -66,16 +69,16 @@ platform of Scoria, and as such is implemented as an embedded interpreter, where
 vehicle.
 
 The results of this thesis indicate that there is space for a high-level language with domain-specific abstractions
-that will ease application development in this domain, and there are many interesting lines of future work that could be pursued.
-First, we wish to draw some synergy between Scoria and HasTEE, and enable a developer to write Scoria programs that use TEEs on
+that will ease application development in this domain, and many interesting lines of future work could be pursued.
+First, we wish to draw some synergy between Scoria and HasTEE and enable a developer to write Scoria programs that use TEEs on
 microcontrollers, e.g. Arm TrustZone on Cortex-M processors. Second, we wish to investigate if we can extend Scoria with
 functionality to describe complete networks of devices and generate code for each of them. We wish to use the type system of
 Haskell to identify unique devices and partition an application based on that.
 
-The remainder of this thesis is structured as follows: first, the domains of the two DSLs presented in this thesis are
-described in terms of an example application. The sections describe nuances related to application development of said domain,
-and describe what domain-specific features might ease development. After that, a background section presents core topics that
-are relevant to this thesis. Finally, the two papers follow.
+In the remaining part of this introduction, we start by introducing the two domains that the DSLs presented in this thesis
+focus on. We describe these domains using an example application and discuss specific aspects of application development
+within each domain. Additionally, we explore domain-specific features that can facilitate development. Following that, a 
+background section covers core topics that are pertinent to this thesis. Finally, the two papers will be presented.
 
 % \begin{itemize}
 %     \item The network is the computer - John Gage
@@ -96,15 +99,15 @@ are relevant to this thesis. Finally, the two papers follow.
 \section{Programs with Temporal Behaviors}
 
 Consider a simple program
-that flashes an LED at a fixed frequency. This program is the "Hello world!" of microcontroller programming, and is often distributed
+that flashes an LED at a fixed frequency. This program is the "Hello world!" of microcontroller programming and is often distributed
 as an example application with operating systems for microcontrollers. It illustrates how to perform
 periodic tasks that do IO. The desired output should vary over time as illustrated in figure \ref{graphics:correct-frequency}.
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.2]{graphics/correct-frequency.png}
-    \caption{The yellow line denote the LED state and its desired temporal behavior. The desired behavior
-    is that it is turned on and off with a stable frequency, with each change in state occuring at the
+    \caption{The yellow line denotes the LED state and its desired temporal behavior. The desired behavior
+    is that it is turned on and off with a stable frequency, with each change in state occurring at the
     half-period points, denoted \code{HP} in the diagram.}
     \label{graphics:correct-frequency}
 \end{figure}
@@ -147,7 +150,7 @@ figure \ref{graphics:drift}.
 \begin{figure}
     \centering
     \includegraphics[scale=0.2]{graphics/drift.png}
-    \caption{The diagram illustrates where the half-period points are, and where the change in LED state actually occurs.
+    \caption{The diagram illustrates where the half-period points are, and where the change in LED state occurs.
     The red segments illustrate the time $\delta_{op}$. The additions of $\delta_{op}$ lead to the frequency of the change in
     LED state drifting further and further away from the half-period points.}
     \label{graphics:drift}
@@ -214,13 +217,13 @@ $\delta_{lookup}$), but the frequency is still stable and correct. The LED state
     \centering
     \includegraphics[scale=0.2]{graphics/phase-error.png}
     \caption{The diagram illustrates the frequency of the change in LED state in the final version of the program.
-    There is a small phase error, indicated by the dotted lines, but otherwise the frequency is the expected one.
+    There is a small phase error, indicated by the dotted lines, but otherwise, the frequency is the expected one.
     The dotted lines denote the actual half-period points, and the distance from the points where the LED state
-    changes to the half-period points remains constant. The distance is of duration $\delta_{lookup}$.}
+    changes to the half-period points remain constant. The distance is of duration $\delta_{lookup}$.}
     \label{graphics:phase-error}
 \end{figure}
 
-While the initial program seemed intuitively reasonable, it was actually erroneous. The final version is
+While the initial program seemed intuitively reasonable, it was erroneous. The final version is
 correct (up to the phase error), but is substantially more complicated. While the pseudo-code might look short and
 simple, still, we now have a program that maintains a logical time and sets absolute deadlines, something that is easy
 to get wrong.
@@ -236,7 +239,7 @@ Domain-specific abstractions that would make writing this program simpler are
     \item An abstraction that yields control while awaiting an alarm
 \end{itemize}
 
-A developer should be able to use these primitives without thinking about systematic delays as the ones discussed above.
+A developer should be able to use these primitives without thinking about systematic delays like the ones discussed above.
 The logical time should be maintained by the runtime system. A rewrite of the above program using functionality of this
 kind yields
 
@@ -251,13 +254,13 @@ kind yields
     }
 \end{verbatim}
 
-The program looks very similar to the first version, with the exception of using an explicit alarm instead of an
+The program looks very similar to the first version, except for using an explicit alarm instead of an
 invocation of a \code{sleep} function.
 
-The first paper in this thesis describes work on this domain. A domain-specific language, which we call
+The first paper in this thesis describes work in this domain. A domain-specific language, which we call
 Scoria \cite{DBLP:conf/memocode/KrookHSEC22}, is implemented as an \textit{embedded} language in Haskell. While Scoria
 has primitives similar to the ones described above, the alarms are more expressive. Alarms take the form of mutable
-variable, which always have a value. An update to a mutable variable can be scheduled for the future, while a process can
+variables, which always have a value. An update to a mutable variable can be scheduled for the future, while a process can
 choose to block until a mutable variable receives an update. The conceptual alarm goes off when the update occurs, and with
 this alarm comes a value (the new value of the variable).
 
@@ -274,128 +277,157 @@ with an LED, the value of the LED is immediately propagated to the physical LED.
 
 \section{Programs with Confidentiality requirements}
 
-A second non-trivial application domain is that of confidential computing. Confidential computing is the act of protecting
-\textit{data in use}.
+The second application domain investigated in this thesis is that of confidential computing. Confidential computing is
+the act of protecting \textit{data in use}.
 Data always exists in one of three states. It can exist as \textit{data in motion}, as \textit{data at rest}, or as
 \textit{data in use}. Data in motion is data that is moving from one part of the system to another, e.g. via TCP, while data at rest
 is data that is being stored in persistent memory. Both of these kinds of data can be protected via e.g. encryption.
 Encryption is enough to guarantee confidentiality in these cases if you trust your encryption scheme.
 
-Data in use, however, is a bit different. To perform any meaningful operations on data, it has to be loaded in from
-persistent storage. Consider the pseudo-code below
+Data in use, however, is a bit different. To perform any meaningful operations on data, it has to be loaded into the RAM.
+Consider the pseudo-code below, that stores secrets persistently in an encrypted data store. For illustrative purposes, the
+data store variable is used as if it represents the data directly, but can also represent a file handle or something more
+realistic.
 
 \begin{verbatim}
-    (int, int) process_data(int x, int y) {
-        return (x+2, x*y);
+    ciphertext encrypted_data_store;
+
+    bool process_data(request req) {
+        // decrypt data store
+        plaintext decrypted = decrypt(encrypted_data_store);
+
+        // compute result of request
+        bool result = handle_request(decrypted, req);
+
+        // update the data store
+        plaintext new_data_store =
+            update_data_store(result, decrypted);
+
+        // encrypt and save data store
+        encrypted_data_store = encrypt(new_data_store);
+        return result;
     }
 
-    void server(key) {
-        req          = await_request();
-        (ct1, ct2)   = load_data(req);
-        (pt1, pt2)   = (decrypt(ct1, key), decrypt(ct2, key));
-        (r1,r2)      = process_data(pt1, pt2);
-        (nct1, nct2) = (encrypt(r1, key), encrypt(r2, key));
-        store((nct1, nct2));
+    void main() {
+        while(true) {
+            request req = await_request();
+            bool result = process_data(req);
+            print(result);
+        }
     }
 \end{verbatim}
 
-The code consists of two parts. One part is the \code{server} function, which deals with communication and parsing of
-incoming requests. The second part is actual application logic, which is very simple in this example. \code{server}
-receives a request that indicates which confidential data should be loaded from the data storage. The data is decrypted before
-it is handed off to the \code{process\_data} procedure, after which the result is encrypted and written back to data storage.
+The code above consists of two parts. The first part is the \code{main} function, that waits for and parses incoming
+requests. The second part is the application logic. Here we decrypt the secret data, compute some result with it,
+update it, and then encrypt it before we store it again.
 
-One problem with this code is that the data is decrypted before it is operated on. The result of this is that it exists in
-plaintext form in the RAM of the machine the code is running on, and an attacker running on the same machine, such as a
-compromised OS, might leak this data. This is illustrated
-in figure \ref{graphics:unsafe-data-in-use}.
+A problem with this code is that the secret data is decrypted before it is operated on. The result of this is that it exists
+in plaintext in the RAM of the machine the code is running on, and an attacker running on the same machine, such as a
+compromised operating system, might leak this data. This is illustrated in figure \ref{graphics:unsafe-data-in-use}.
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.2]{graphics/unsafe-data-in-use.png}
     \caption{The diagram illustrates that while the data is at rest, it exists in encrypted form. When the data
-    is operated on, it is loaded from the data storage and decrypted (as indicated by the red color), before the result is encrypted and
-    written back to the data storage.}
+    is operated on it is decrypted (as indicated by the red color), before the updated data is encrypted and stored.}
     \label{graphics:unsafe-data-in-use}
 \end{figure}
 
-One technique for mitigating this is to apply homomorphic encryption\cite{DBLP:conf/stoc/Gentry09}. Homomorphic encryption is a form of encryption where
-operations can be performed on the encrypted data without decrypting it, such that the decrypted result is the correct one.
+To mitigate this vulnerability, we wish to modify the program such that the secret data does not have to reside in RAM in
+a decrypted format. One approach to achieve this is to apply \textit{fully homomorphic encryption}
+\cite{DBLP:conf/stoc/Gentry09} (FHE), which encrypts the data such that it can be operated on directly. Drawbacks with this
+approach are that fully homomorphic operations on encrypted data are very slow and that there can be a substantial amount of
+noise added to encrypted values. It takes an expert to write code that uses FHE such that it is feasible to execute it, both in
+terms of execution speed and accuracy of the result. Furthermore, there is a risk that the application logic becomes obfuscated
+if the code is using FHE.
+
+Another mitigation technique, which we investigate in this thesis, is using TEEs to do confidential computing. The domain-specific
+abstractions we investigate in this thesis are
+
+\begin{itemize}
+    \item Using the type system to identify which components of an application should reside in a TEE. If the return type of a
+    procedure, or the type of a variable, is secure, that entity is expected to reside in a TEE.
+    \item Allowing the result of a secure computation to be accessed outside of the TEE.
+\end{itemize}
+
+The above example, rewritten using these domain-specific abstractions, becomes
 
 \begin{verbatim}
-    (int, int) process_data(int x, int y, Key key) {
-        two   = encrypt(2, key);
-        left  = homo_add(x, two, key);
-        right = homo_mul(x,y, key);
-        return (left, right);
+    secret plaintext data_store;
+
+    secret bool process_data(request req) {
+        // compute result of request
+        secret bool result = handle_request(data_store, req);
+
+        // update the data store
+        secret plaintext new_data_store =
+            update_data_store(result, data_store);
+
+        // save data store
+        data_store = new_data_store;
+        return result;
     }
 
-    server(key) {
-        req          = await_request();
-        (ct1, ct2)   = load_data(req);
-        (r1,r2)      = process_data(ct1, ct2, key);
-        store((r1,r2))
+    void main() {
+        while(true) {
+            request req = await_request();
+            bool result = inTEE(process_data(req));
+            print(result);
+        }
     }
 \end{verbatim}
 
-\begin{figure}
-    \centering
-    \includegraphics[scale=0.2]{graphics/safe-data-in-use.png}
-    \caption{By applying homomorphic encryption, the data does not need to be decrypted before it is processed. The result
-    of the computation is already encrypted, and is written back to the disk directly.}
-    \label{graphics:safe-data-in-use}
-\end{figure}
+The type of the data store is now \code{secure plaintext}, denoting that it resides in the TEE and that there is no need to
+protect the data further by encrypting it. Similarly, the procedure \code{process\_data} now returns a \code{secret bool}, indicating
+that the procedure exists in the TEE. Procedures in the TEE are allowed to inspect \code{secret} variables, whereas if a procedure
+outside of the TEE tries to inspect \code{secret} data, an exception is raised.
+The \code{main} procedure, which resides outside of the TEE, invokes a procedure in the TEE by means of the \code{inTEE} method,
+which invokes a secret procedure and extracts its result.
 
-\textcolor{red}{FIXME: the key is still in RAM, need to say something about this}
-In the above code, the data is never decrypted, as illustrated in figure \ref{graphics:safe-data-in-use}. Even if the OS is compromised, and the contents of the RAM leaked, the
-data is not leaked in plaintext form. A downside of this approach is that the procedure that processes the data is now
-much more complicated. It needs to apply special operations in place of ordinary ones. This obfuscates the code and
-adds extra complexity. In the presence of a bug, it could also be harder to debug this code. While the example program
-above still looks fairly simple, it does not scale very well.
+The point of using a TEE is to put as little code as possible in it. If the code inside the TEE is compromised, the entire TEE is
+likely compromised. To this end, the (usually) very large operating system resides outside of the enclave. By using the type
+system to encode what is confidential or not, the non-trivial task of partitioning a program can be done automatically by the
+compiler, yielding a smaller executable for the TEE.
 
-Ideally, the program above would be described only in terms of the application logic. Encryption is an orthogonal part of
-the application that just "needs to happen", and is not necessarily part of the application logic.
-
-The problem is that the language does not have any abstractions that help describe what is confidential or not. It is all
-implemented in software, where the developer has to explicitly handle encryption and decryption at correct points in the
-code. A domain-specific abstraction for confidential computing would label the function \code{process\_data} as confidential,
-and then the compiler would take over and actually ensure confidentiality.
+The second paper in this thesis presents the DSL HasTEE, which uses the type system of Haskell to discover which part of
+an application should execute in a TEE, and which part should reside outside. An application is partitioned automatically,
+and communication between the two components is inserted. The above program can be written in HasTEE, as shown below
 
 \begin{verbatim}
-    confidential (int, int) process_data(int x, int y) {
-        return (x+2, x*y);
-    }
+processData :: Enclave (Ref DataStore) -> Request -> Enclave Bool
+processData erd req = do
+  ref       <- erd
+  dataStore <- readRef ref
+  let result = handleRequest dataStore req
+  writeRef ref (updateDataStore result dataStore)
+  return result
 
-    public server() {
-        req          = await_request();
-        (ct1, ct2)   = load_data(req);
-        (r1,r2)      = execute_confidential(process_data(ct1, ct2));
-        store((r1,r2))
-    }
+main :: App Done
+main = do
+  ref      <- liftSecureRef InitialEmptyDataStore
+  procData <- secure $ processData ref
+  runClient $ do
+    sequence $ repeat $ do
+      req    <- await
+      result <- onEnclave $ procData <.> req
+      putStrLn $ show result
 \end{verbatim}
 
-\textcolor{red}{actually change the example to something that uses a secret stored in the enclave...}
-
-This version of the program contains much less overhead in relation to application logic. The operation to be performed
-on the data is described only in terms of application logic. There are no details of how confidentiality is ensured.
-
-In the second paper of this thesis, we turn Haskell into a domain-specific language. The framework HasTEE is developed
-which allows a developer to write a single Haskell application that uses two monads to describe which computations are
-considered confidential, and which are not. This single Haskell application is then automatically partitioned into two
-Haskell applications that communicate via remote procedure invocations, and then one of these applications will execute
-inside a hardware enclave.
-
-\textcolor{red}{Change the example above to be another one, and then implement that same example in HasTEE and show the reader that.}
+A Haskell developer will be very productive, very quickly, using HasTEE. The only HasTEE-specific language abstractions are
+two monads, called \code{Enclave} and \code{Client}, which denote what must go into the TEE and what may not. The above
+program will be partitioned into two components where \code{processData} will end up in the TEE, and \code{main} will
+remain outside.
 
 \section{Background}
 
-This section describe core topics that are relevant to this thesis. The first topic is \textit{Embedded Domain-specific Languages},
-as the research presented in this thesis have been carried out by implementing embedded DSLs.
+This section describes core topics that are relevant to this thesis. The first topic is \textit{Embedded Domain-specific Languages},
+as the research presented in this thesis has been carried out by implementing embedded DSLs.
 After this, a section about \textit{Synchronous Programming Languages} follow, as the DSL presented in paper one, Scoria, belongs
 to the class of synchronous languages.
 The last two topics relate to the DSL presented in paper two, HasTEE. They are \textit{Information-flow Control} and
 \textit{Trusted Execution Environments}.
 
-\subsection{Embedded Domain-specific Languages}
+\paragraph{Embedded Domain-specific Languages}
 
 Implementing a programming language requires considerable engineering effort. At the very least, a parser and interpreter
 has to be implemented. More than often there are many more phases involved, such as type checking, renaming, etc.
@@ -406,10 +438,10 @@ a host language, many phases from the host compiler can be directly inherited by
 type checker, code generator, etc.
 
 Languages can be embedded in either a \textit{shallow} or \textit{deep} fashion.
-While a shallow embedding will yield a result in a semantic domain, a deep embedding does not necessarily have to
-do that. A deep embedding constructs syntax rather than evaluate semantics. This syntax can be interpreted at a later
-stage to yield the semantics of a program. A deep embedding may also produce a value of another syntactic domain, by
-\textit{generating code}. In such a scenario, we have two distinct execution times, the host language execution time, and the execution time of the generated
+When using a shallow embedding, an embedded program is executed during host language execution time. For better or worse,
+this means that the embedded language inherits the host language's runtime. A deep embedding, in contrast, will
+produce syntax during the language execution time, which can later be compiled and run independently of the host language.
+In such a scenario we have two distinct execution times, the host language execution time, and the execution time of the generated
 code, the embedded language. The host language becomes a very powerful meta-language for meta-programming in
 the embedded language. This is a result of the two execution times -- the execution time of the host language and the
 execution time of the embedded language. During host language execution time, programs in the embedded language can be
@@ -457,30 +489,41 @@ While these are some arguments in favor of EDSLs over DSLs, there are also argum
 arguments against EDSLs are
 
 \begin{itemize}
-    \item The syntax of the embedded language is influence by the choice of host language. A dedicated DSL will have its own
+    \item The syntax of the embedded language is influenced by the choice of host language. A dedicated DSL will have its own
     parser that supports domain-specific syntax.
     \item The choice of host language can have an impact on developer efficiency. If a language is embedded in e.g. Haskell, a
     Haskell developer is better situated to exploit Haskell features to write clever programs.
     \item As an embedded program is written in a host language, error messages from the host language are inherited. These may
-    be more complicated than necessary, and can reflect implementation details that don't concern the application developer.
+    be more complicated than necessary and can reflect implementation details that don't concern the application developer.
 \end{itemize}
 
-\textcolor{red}{Perhaps reiterate that for language prototyping, we can be very efficient with an EDSL. We can then
-develop an actual DSL after we are done experimenting, and have a better idea of what we want our language to look like.}
+\paragraph{Synchronous Programming Languages}
+%\subsection{Synchronous Programming Languages}
 
-% that the syntax of the embedded language becomes influenced by the host language. A dedicated DSL will employ its own parser,
-% yielding potential domain-specific syntax that simplifies program development. Another argument is that the choice of host language
-% might impair programmer efficiency. If an EDSL is embedded in e.g. Haskell, a Haskell developer might be much more efficient
-% than a C developer, as the Haskell developer knows how to properly take advantage of the host language features.
+Synchronous languages were developed to facilitate the development of applications that \textit{react} to their
+environment. Execution is divided into discrete, successive instants, where at each instant, the program may react.
+This model of execution makes it easy to reason about the behavior of a program over time.
 
-\subsection{Synchronous Programming Languages}
+Hardware designers have devoted themselves to synchronous circuit design for decades. A circuit is a reactive system
+that upon every clock cycle, recomputes all outputs. This is also referred to as \textit{dataflow programming}, and is
+illustrated in \ref{graphics:dataflow}.
 
-A \textit{reactive} program is one that rects to events. Events are delivered via streams, and are either present or absent.
-Hardware designers have taken this paradigm to heart and have engaged in \textit{dataflow} programming for many decades.
-A dataflow program structures a program as a collection of nodes, connected via directed edges, through which data (events) are
-transmitted. An event can either be present or absent, and when all incoming edges of a node have a value, the node will
-immediately compute values for its outgoing edges, conceptually instantaneously. In this context of hardware, edges always
-carry a value (a zero or a one), and upon every cloc of the processor, the whole system is updated.
+% A \textit{reactive} program is one that rects to events. Events are delivered via streams, and are either present or absent.
+% Hardware designers have taken this paradigm to heart and have engaged in \textit{dataflow} programming for many decades.
+% A dataflow program structures a program as a collection of nodes, connected via directed edges, through which data (events) are
+% transmitted. An event can either be present or absent, and when all incoming edges of a node have a value, the node will
+% immediately compute values for its outgoing edges, conceptually instantaneously. In this context of hardware, edges always
+% carry a value (a zero or a one), and upon every cloc of the processor, the whole system is updated. An illustration of a
+% dataflow program can be seen in figure \ref{graphics:dataflow}.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.2]{graphics/lustre-nodes.png}
+    \caption{A depiction of a dataflow program made up of nodes. The whole program accepts three inputs and computes
+    one output. Notice that a node can depend on its output in the previous instant by feeding the output back as an input
+    signal. This models a form of memory.}
+    \label{graphics:dataflow}
+\end{figure}
 
 Drawing inspiration from this, french researchers in the 1980s did seminal work on \textit{synchronous} languages in the
 form of the languages Lustre \cite{DBLP:conf/popl/CaspiPHP87}, Esterel \cite{DBLP:journals/scp/BerryG92},
@@ -494,8 +537,8 @@ the stream \code{EVEN} that filters out the even numbers.
 \begin{verbatim}
     instant 1,2,3,4,5,6,7,8,9,10,11,12,...
 
-    X    =    [1,2,3,4,5,6,7,8,9,10,...
-    EVEN =    [  2,  4,  6,  8,  10,...
+    X    = [1,2,3,4,5,6,7,8,9,10,...
+    EVEN = [  2,  4,  6,  8,  10,...
 \end{verbatim}
 
 Whereas \code{X} is present at every instant, \code{EVEN} is only present at every other instant. New streams can be computed
@@ -510,52 +553,44 @@ from existing streams.
 The expression \code{X + Y} is only valid if \code{X} and \code{Y} are defined in the same instants. The expression
 \code{X + Y} has no meaning if either \code{X} or \code{Y} doesn't have a value, and the program is rejected by the Lustre
 compiler. It is common to refer to a stream as having a \textit{clock} that ticks at those instants where a value is
-present. In the example with the streams \code{X} and \code{EVEN}, the clock of \code{X} ticks at a certain rate and
+present. In the example with the streams \code{X} and \code{EVEN}, the clock of \code{X} ticks at a certain rate, and
 the clock of \code{EVEN} ticks at half the rate of \code{X}.
 
 As streams such as \code{X + Y} depend on other streams, \code{X + Y} \textit{reacts} when \code{X} and \code{Y} are
 present. Reactions such as these are conceptually instantaneous, giving rise to the term \textit{synchronous} languages,
-as outputs are computed synchronized with when their inputs appear.
+as inputs and outputs appear synchronised.
 
-Reusable nodes can be declared. A node takes a number of input streams as arguments and produce output streams. When events
-arrive on the input streams, the node immediately \textit{reacts} and compute values for its output streams. The node below
-implements a counter whose output stream is a growing sequence, that can be reset when the \code{reset} stream is \code{true}.
-
-\begin{verbatim}
-    node COUNTER(val_init, val_incr: int; reset: bool)
-        returns (n: int);
-    let
-      n = val_init -> if reset
-                      then val_init
-                      else pre(n) + val_incr;
-    tel.
-\end{verbatim}
-
-Esterel takes a different view at synchronicity. Instead of nodes in a dataflow graph reacting to input events, Esterel
+Esterel takes a different view of synchronicity. Instead of nodes in a dataflow graph reacting to input events, Esterel
 declares nested threads that may react to broadcasted signals. Threads may suspend while waiting for a signal, and when
 the signal is broadcasted in an instant, the thread reacts instantaneously. The signal does not persist until the next
-instant. Esteral is an imperative language with common control-flow statements, such as loops and conditionals.
+instant. Esteral is an imperative language with common control-flow statements, such as loops and conditionals. While it
+is not labeled as a dataflow language, the compiler will still construct a dataflow graph from the input and inspect it
+to ensure that the program is deterministic.
 
-\textcolor{red}{write more on Esterel, of course}
-
+These synchronous languages a compiled down to a single function that takes the inputs in the current instant and computes
+the outputs. This function, which we refer to as the \textit{step}-function, is what conceptually finishes instantaneously.
 Common to all these synchronous languages is that despite being able to create clocks and use them to specify
-temporal behavior, the programs are still ultimately governed by a global clock. Upon every tick of this clock, the program
-reacts, as shown in figure \ref{graphics:global-clock}. Furthermore, while being suitable for specifying temporal
-properties, it is not actually possible to specify temporal properties directly! A program may react to a signal or event,
-but that event need not be synchronized with time. It is possible to, in one instant, specify behavior in relation to other
-instants, but not in relation to time. These languages does not have an abstraction that let's the developer e.g. say
-\textit{wait for two seconds}, but rather have abstractions that express \textit{wait for an event}. It is then up to the
-runtime system to provide a source of events that can be used to define a two second delay.
+temporal behavior, a program is still ultimately governed by a global clock. Clocks can be derived from other clocks, such
+as how the \code{EVEN} clock was derived from \code{X}, but regardless of which clock a node has, upon every tick of the
+global clock, the step function is invoked. This is depicted in figure \ref{graphics:global-clock}.
 
-Stephen A. Edwards and John Hui \cite{DBLP:conf/fdl/EdwardsH20} recognized that broadcasting an event at every tick of a global clock can be
-wasteful. In some application domains, such that that of \textit{Internet of Things}, many tasks are periodic. There are
-long periods of time where no action should be taken, and during these periods, no event should be broadcasted. This lets
-the device the program executes on conserver power. This observation, together with a desire to be able to specify concrete,
-temporal behavior, lead to the \textit{Sparse Synchronous Model} (SSM).
+Furthermore, while these synchronous languages were designed for specifying temporal properties, their sample-driven
+nature makes them unable to specify concrete time values. A node can specify behavior in one instant, in relation to
+other instants. There is not, however, a way to say e.g. \textit{wait for two seconds}. A node can have an input stream
+that it assumes has a certain clock, but it is then up to the runtime system to supply the requested clock.
 
-In SSM, not all instants are broadcasted to a program, as shown in \ref{graphics:sparse-clock}. \textcolor{red}{The figure mentions a step function. Either mention this in the text, or remake the figure} Temporal behavior such as
-\textit{wait for two seconds} can be expressed natively. Time is a first-class citizen, and can be treated as any other value.
-A SSM program is made up of threads, similar to Esterel. Threads may spawn other threads and communicate to them via signals.
+Stephen A. Edwards and John Hui \cite{DBLP:conf/fdl/EdwardsH20} recognized that giving meaning to every instant by invoking the
+step function at every tick of a global clock can be
+wasteful. In some application domains, such that that of \textit{Internet of Things}, a device may spend long periods doing nothing. During these periods, regardless of whether they are periodic or aperiodic, the program should not
+have to react to any clock events. This lets the device the program executes on conserve power. This observation,
+together with a desire to be able to specify concrete, precise temporal behavior natively, lead to the
+\textit{Sparse Synchronous Model} (SSM).
+
+In SSM, not all instants are assigned meaning, as shown in \ref{graphics:sparse-clock}. Temporal behavior such as
+\textit{wait for two seconds} can be expressed natively, as computation is not driven by a base clock. Time is a
+first-class citizen, and can be treated as any other value. As time is not expressed in terms of instants, but expressed
+natively, it is possible to skip over instants. A SSM program is made up of processes, similar to Esterel. Threads may spawn
+other threads and communicate to them via scheduled variables.
 
 \begin{verbatim}
 foo(&a)
@@ -574,16 +609,20 @@ main()
 
 In the above example, the variable \code{a} is used to transmit signals. The \code{fork} statement will spawn concurrent
 child processes \code{bar} and \code{foo}. The processes block until \code{a} receives an update, which it does after one second,
-as scheduled by the \code{main} procedure before the children were forked. To ensure determinism, processes are ordered. The
+as scheduled by the \code{main} procedure before the children were forked. To ensure determinism, processes are ordered
+by a priority that is derived from their parents' priority, and their syntactic order in a \code{fork} statement. The
 above program will first give \code{a} the value \code{1} when one second has passed, after which \code{bar} wakes up and
 adds \code{4} to it. Then \code{foo} wakes up and multiplies \code{a} with two, yielding a final value of \code{10} for \code{a}.
 
-Another more recent synchronous language is Lingua Franca (LF) \cite{DBLP:journals/tecs/LohstrohMBL21}. LF uses the abstraction
+Another synchronous language that was developed at the same time as SSM is Lingua Franca (LF)
+\cite{DBLP:journals/tecs/LohstrohMBL21}. LF uses the abstraction
 of reactors instead of threads or nodes. Actors are used to model concurrent processes in languages such as Erlang. Actors
-communicate by sending messages to each other, but allows for nondeterminism by not ordering messages.
+communicate by sending messages to each other but allow for non-determinism by not ordering messages.
 The reactors in LF assign an ordering to every message, yielding a deterministic program.
-A LF program declares a static dataflow graph, whereas SSM defines a dynamic dataflow graph that grows and shrinks as the
+A LF program, much like Lustre, declares a static dataflow graph, whereas SSM defines a dynamic dataflow graph that grows and shrinks as the
 program is running.
+Unique to LF is that it is a \textit{polyglot} language. The logic of each reactor can be given in many different
+languages.
 
 \begin{figure}
     \centering
@@ -597,22 +636,20 @@ program is running.
     \centering
     \includegraphics[scale=0.2]{graphics/sparse-clock.png}
     \caption{In contrast to the synchronous model, the sparse synchronous model allows the runtime system to
-    detect that no computation should take place for some time. Not having to invoke the step function
-    leaves the system open to perform other tasks, and if none exist, to sleep and conserve energy.}
+    not invoke the step function upon \textit{every} tick of the global clock.}
     \label{graphics:sparse-clock}
 \end{figure}
 
-\subsection{Information-flow Control}
+\paragraph{Information-flow Control}
 
-\todo{rephrase the first part, and slide into IFC in a better way.}
-Information-flow control (IFC)\cite{DBLP:series/natosec/HedinS12} ensures that data propagates through a program in such a way that some security policy is
-not violated. Values are labeled with a security level, which is then tracked when a value is used to make sure that the
-value is not used inappropriately.
-A value of one security level can e.g. not influence the result of a value with a lower security level. The property that no data is leaked
-in this way is called noninterference.
+Information-flow control \cite{DBLP:series/natosec/HedinS12} (IFC) is a security mechanism that ensures that data propagates
+through a program in such a way that some security policy is not violated. Values are labeled with a security level that is
+tracked, and a value of one security level can not influence a value of a lower security level, as information
+about the more secure value can leak to the value of a lower security level. The property that no data is leaked in this way is
+called noninterference.
 
 As a simple example, we describe a language with two security levels, public and secret. We assume that anyone can inspect
-a program's public output. The pseudo-code below denotes security levels explicitly in the type signature
+a program's public input and output. The pseudo-code below denotes security levels explicitly in the type signature
 of the procedure.
 
 \begin{verbatim}
@@ -642,9 +679,9 @@ IFC policies can be enforced statically, dynamically, or through a combination o
 a program is allowed to execute, whereas a dynamic policy is checked at runtime. If the policy is violated, execution
 is aborted and an error is raised.
 
-If a value could \textit{never} be downgraded to a lower security level, however, then it would be difficult to write any meaningful program that uses
-different security levels. A principled way to release secrets is to explicitly declassify values, giving them a lower
-security level.
+If a value could \textit{never} be downgraded to a lower security level, however, then it would be difficult to write any
+meaningful program that uses different security levels. A principled way to release secrets is to explicitly declassify values,
+giving them a lower security level.
 
 \begin{verbatim}
 secret string stored_pass;
@@ -659,32 +696,33 @@ The result of comparing the stored password against the candidate password must 
 password to do the comparison. Before the resulting boolean can be released as a public outcome, we must
 \code{declassify} it.
 
-Regardless of whether you use static IFC, or dynamic IFC, or a hybrid variant of IFC, the threat model assumes that the
+Regardless of whether you use static IFC, dynamic IFC, or a hybrid variant of IFC, the threat model assumes that the
 operating system and runtime system are trusted. In the presence of a compromised operating system, which we assume can
 inspect any memory it desires, it does not matter what label a piece of data has. The operating system can inspect and
-leak it.
+leak it. In this thesis, we investigate how we can strengthen this threat model by using TEEs to store the secret values.
+Since the TEE does not need to trust the operating system, the secrets inside should remain safe even if the operating system
+is compromised.
 
-\textcolor{red}{TODO write something more maybe}
+\paragraph{Trusted Execution Environments}
 
-\subsection{Trusted Execution Environments}
-
-In an effort to protect data in use, every major hardware vendor is working on support for hardware-enforced trusted
+To protect data in use, every major hardware vendor is working on support for hardware-enforced trusted
 execution environments (TEE). Intel is developing its Intel Software Guard Extensions (Intel SGX)\cite{intelsgx}, Arm is
 developing Arm TrustZone\cite{armtz}, AMD is developing different variants such as AMD-SEV\cite{amdsev}, AMD-SME, and
 AMD-SEV-SNP, to name just a few. A TEE allocates a contiguous region of memory that contains both secure code and data.
 This region of memory is then protected by the hardware, where the protection mechanism varies between hardware vendors.
 The purpose is that e.g. a compromised operating system can not read this memory.
 
-Intel SGX refers to such protected memory regions as \textit{enclaves}, and protect them via encryption by the CPU. Code and
-data is decrypted when it moves into CPU cache, and encrypted when it leaves the CPU cache. This constant encryption
+Intel SGX refers to such protected memory regions as \textit{enclaves}, and protects them via encryption by the CPU. Code and
+data are decrypted when they move into the CPU cache, and encrypted when it leaves the CPU cache. This constant encryption
 and decryption add significant overhead. When untrusted code invokes a trusted method in an enclave, the time it takes
 to just perform the function call is upwards of 35 times slower.
 
-In contrast to Intel SGX, Arm TrustZone use hardware isolation to separate the memory accessible by untrusted software and
-trusted software. No encryption is needed, as untrusted memory can not access trusted memory. \textcolor{red}{ask abi for performance}
+In contrast to Intel SGX, Arm TrustZone uses hardware isolation to separate the memory accessible by untrusted software and
+trusted software. No encryption is needed, as untrusted memory can not access trusted memory. Performance seems to
+be better than that of Intel SGX, but there are still overheads \cite{DBLP:conf/dais/AmacherS19} compared with using no TEE at all.
 
 The programming model for TEEs requires the developer to partition their application into two components. One component
-executes inside the TEE, while the untrusted component executes outside. The untrusted components drive the execution, and may
+executes inside the TEE, while the untrusted component executes outside. The untrusted components drive the execution and may
 perform remote procedure calls in the application inside the TEE, which in turn can call out of the enclave if it requires so.
 If untrusted code tries to access trusted data, an error will be raised. This configuration is illustrated in
 figure \ref{graphics:tee}.
@@ -692,7 +730,7 @@ figure \ref{graphics:tee}.
 \begin{figure}
     \centering
     \includegraphics[scale=0.2]{graphics/tee.png}
-    \caption{The diagram illustrates that an application using a hardware-enforced TEE to protect its secrets need to
+    \caption{The diagram illustrates that an application using a hardware-enforced TEE to protect its secrets needs to
     be partitioned into two parts. The part outside of the TEE can perform remote procedure calls in the application
     executing inside the TEE. Arrows indicate remote procedure invocations.}
     \label{graphics:tee}
@@ -707,130 +745,3 @@ legacy applications to run on Intel SGX, as these applications were written with
 whole standard library. To ease the porting of legacy applications to Intel SGX, projects such as Gramine have emerged
 (previously called Graphene \cite{DBLP:conf/usenix/TsaiPV17}). Gramine is a library OS that reintroduces the missing
 functionality from the restricted standard library, enabling any Linux binary to run unmodified.
-
-% \section{This Thesis}
-
-% The research described in this thesis details my experimentation and exploration of the design and implementation of
-% DSLs, where I feel that there are unexplored abstractions that warrant experimentation.
-
-% In paper 1 I experiment with language design for a language that treats time as a first-class citizen. The programming model
-% is implemented with support for IO, and the intention is that it should be easy to specify the temporal behavior of a program
-% without needing to worry about the details of implementation.
-
-% In paper 2 we turn Haskell itself into a DSL for writing applications that use secure enclaves. We implement a library that
-% allows the developer to specify which computations should happen inside an enclave, and which should happen outside. We
-% then recognize that such a scenario is equivalent to enforcing IFC policies, but in a system where the operating system
-% does not have to be trusted.
-
-% \section{Future work}
-
-% My research has reached a point where there are many different paths forward. Below I will mention a few of them.
-
-% \begin{itemize}
-%     \item Is it possible to distribute Scoria? Currently, SSM executes locally on a single machine, but it would be interesting
-%     to see how it could be distributed to execute across multiple devices in a network. Latencies in network communication
-%     might lead to an event arriving after time has already progressed. Related work to this is e.g LF \cite{DBLP:journals/tecs/LohstrohMBL21} and PTIDES \cite{DBLP:conf/dsrt/DerlerLM08}.
-%     \item Generalizing HasTEE such that more than one TEE can be programmed would allow
-%     us to use a more general lattice of security label, rather than the binary system of labels we currently use (trusted/untrusted).
-%     \item To further increase trust in a HasTEE application, it should be investigated whether the attestation functionality of
-%     e.g Intel SGX can be used to prove the trustworthiness of the generated enclaves.
-%     \item HasTEE applications do not make any assumptions on the underlying hardware TEE. We wish to investigate if we can port
-%     HasTEE to other hardware platforms, such as Arm TrustZone.
-%     \item We would like to explore whether there can be some synergy between Scoria and HasTEE. Some microcontrollers come with
-%     the Arm Cortex-M processors, which have support for TrustZone. It would make for a very nice story if all of these things can come
-%     together; distributed SSM with support for confidential computing.
-% \end{itemize}
-
-
-
-% My research so far have taken me to a place where there are many potential ways foward. My work on Scoria showed how we can
-% extend a reactive system with support for IO, while remaining deterministic. My work on HasTEE illustrated that is it possible
-% to perform confidential computing in native Haskell, with the use of a simple library.
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \chapter{Summary of Included Papers}
-% \label{chap:summary}
-
-% \section{Title of the First Paper}
-% \sectionmark{First Paper} % This is in case the title is too long to fit properly in the headings of the following pages
-
-% In this paper we present a method to do something.
-
-% \subsubsection*{Problem}
-
-% Description of what we are trying to solve.
-
-% \vskip 1cm
-
-% Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Vel facilisis volutpat est velit egestas dui. Enim ut sem viverra aliquet eget. Lorem sed risus ultricies tristique nulla aliquet. Ultricies mi eget mauris pharetra et ultrices neque. Gravida rutrum quisque non tellus orci ac auctor augue mauris. In fermentum et sollicitudin ac orci phasellus egestas tellus. Orci ac auctor augue mauris augue neque gravida. Facilisi morbi tempus iaculis urna id volutpat lacus laoreet non. Hac habitasse platea dictumst vestibulum. Egestas fringilla phasellus faucibus scelerisque eleifend donec pretium. Auctor elit sed vulputate mi sit amet mauris commodo quis. Vitae nunc sed velit dignissim sodales ut.
-
-
-
-% \subsubsection*{Contribution}
-
-% What does the paper do to try to solve the problem?
-
-% \vskip 1cm
-
-% Molestie a iaculis at erat. In vitae turpis massa sed elementum tempus. Tincidunt id aliquet risus feugiat in ante metus. Nunc sed blandit libero volutpat. Pharetra diam sit amet nisl. Eu facilisis sed odio morbi quis commodo odio. Porta lorem mollis aliquam ut porttitor. Metus vulputate eu scelerisque felis imperdiet. Volutpat sed cras ornare arcu dui vivamus arcu felis bibendum. Ultrices mi tempus imperdiet nulla. Tristique sollicitudin nibh sit amet commodo nulla facilisi nullam. Tortor vitae purus faucibus ornare suspendisse sed. Quisque id diam vel quam elementum pulvinar etiam non. Platea dictumst vestibulum rhoncus est pellentesque.
-
-
-% \subsubsection*{Methodology}
-
-% How is it implemented?
-
-% \vskip 1cm
-
-% Consequat nisl vel pretium lectus quam id. Phasellus egestas tellus rutrum tellus. Id neque aliquam vestibulum morbi blandit cursus risus at ultrices. Est ultricies integer quis auctor elit sed vulputate. Eu consequat ac felis donec et odio pellentesque diam volutpat. Urna id volutpat lacus laoreet non curabitur gravida arcu ac. Scelerisque purus semper eget duis at tellus. Porttitor leo a diam sollicitudin tempor id eu nisl nunc. Mauris nunc congue nisi vitae suscipit tellus mauris. Leo duis ut diam quam nulla porttitor massa id neque. In hendrerit gravida rutrum quisque non. Ornare lectus sit amet est.
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \clearpage
-
-% \section{Title of the second paper}
-
-% In this paper we present a method to do something else.
-
-
-% \subsubsection*{Problem}
-
-% Description of what we are trying to solve.
-
-% \vskip 1cm
-
-% Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Vel facilisis volutpat est velit egestas dui. Enim ut sem viverra aliquet eget. Lorem sed risus ultricies tristique nulla aliquet. Ultricies mi eget mauris pharetra et ultrices neque. Gravida rutrum quisque non tellus orci ac auctor augue mauris. In fermentum et sollicitudin ac orci phasellus egestas tellus. Orci ac auctor augue mauris augue neque gravida. Facilisi morbi tempus iaculis urna id volutpat lacus laoreet non. Hac habitasse platea dictumst vestibulum. Egestas fringilla phasellus faucibus scelerisque eleifend donec pretium. Auctor elit sed vulputate mi sit amet mauris commodo quis. Vitae nunc sed velit dignissim sodales ut.
-
-
-
-% \subsubsection*{Contribution}
-
-% What does the paper do to try to solve the problem?
-
-% \vskip 1cm
-
-% Molestie a iaculis at erat. In vitae turpis massa sed elementum tempus. Tincidunt id aliquet risus feugiat in ante metus. Nunc sed blandit libero volutpat. Pharetra diam sit amet nisl. Eu facilisis sed odio morbi quis commodo odio. Porta lorem mollis aliquam ut porttitor. Metus vulputate eu scelerisque felis imperdiet. Volutpat sed cras ornare arcu dui vivamus arcu felis bibendum. Ultrices mi tempus imperdiet nulla. Tristique sollicitudin nibh sit amet commodo nulla facilisi nullam. Tortor vitae purus faucibus ornare suspendisse sed. Quisque id diam vel quam elementum pulvinar etiam non. Platea dictumst vestibulum rhoncus est pellentesque.
-
-
-% \subsubsection*{Methodology}
-
-% How is it implemented?
-
-% \vskip 1cm
-
-% Consequat nisl vel pretium lectus quam id. Phasellus egestas tellus rutrum tellus. Id neque aliquam vestibulum morbi blandit cursus risus at ultrices. Est ultricies integer quis auctor elit sed vulputate. Eu consequat ac felis donec et odio pellentesque diam volutpat. Urna id volutpat lacus laoreet non curabitur gravida arcu ac. Scelerisque purus semper eget duis at tellus. Porttitor leo a diam sollicitudin tempor id eu nisl nunc. Mauris nunc congue nisi vitae suscipit tellus mauris. Leo duis ut diam quam nulla porttitor massa id neque. In hendrerit gravida rutrum quisque non. Ornare lectus sit amet est.
-
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \chapter{Discussion and Future Work}
-% \label{chap:discussion-future-work}
-
-% What are your conclusions?
-
-% What's next?

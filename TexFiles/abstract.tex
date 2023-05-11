@@ -18,20 +18,27 @@
 
 \noindent
 
-Without domain-specific language abstractions, developing software for niche domains can be a tedious, error-prone activity.
-Notably, when the target platform of your application is a specific piece of hardware, the toolchain for that hardware
-very often expects a developer to write low-level C code. C, for all the good it does, does not supply high-level abstractions,
-much less domain-specific ones.
+In this thesis, we describe our research on how to program low-level platforms with high-level languages.
+As an example, consider applications that run on microcontrollers. Such applications
+may need to specify precise temporal behavior, carefully manage power usage, and handle cryptographic keys.
+Low-level platforms are programmed using low-level languages such as C/C++, where the lack of expressiveness can
+lead to error-prone code.
 
-In this thesis I present my research on using Haskell to develop domain-specific languages for two specific domains, whose
-intended target platform is not traditionally targeted by Haskell developers. The first application domain is real-time applications
-for the Internet of Things, where the target platform is a microcontroller. The second application domain is
-Confidential Computing, where the target platform is a conventional PC with support for hardware-enforced trusted execution
-environments.
+We investigate whether we can use high-level languages to program these platforms, by embedding domain-specific languages
+in a host language, Haskell. A high-level language offers better expressivity and shields the developer from low-level
+details, yielding code that more concretely describes what the application is supposed to do. Furthermore, a richer runtime
+system could ease the burden of e.g. memory management and scheduling of coroutines.
+
+The papers in this thesis indicate that it is possible to program these devices using a high-level language. We develop
+two domain-specific languages, Scoria and HasTEE. Scoria is evaluated on NRF52 microcontrollers, where we run applications
+that require precise, temporal behavior and perform I/O. HasTEE is evaluated on machines whose processor has support
+for Intel Software Guard Extension and shows that the type system of Haskell can be used to automatically partition a Haskell
+application and run it in a trusted execution environment.
+
 
 \vspace{10 mm}
 \noindent{\textbf{Keywords}}
 
 \vspace{3 mm}
-\noindent{Haskell, Domain-specific languages, DSL, EDSL, Confidential Computing, Intel SGX, TEE}
+\noindent{Haskell, Embedded Domain-specific Languages, Confidential Computing, TEE}
 
